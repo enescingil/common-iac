@@ -1,13 +1,20 @@
 name: Kubernetes Deployment
 
 on:
-  push:
-    branches:
-      - main
-
-env:
-  AWS_REGION: us-west-2
-  K8S_NAMESPACE: my-namespace
+  workflow_call:
+    inputs:
+      service_account:
+        description: 'service account name'
+        required: true
+        type: string
+      aws_region:
+        description: 'AWS Region to deploy'
+        required: true
+        type: string
+      k8s_namespace:
+        description: 'namespace for K8s deployment'
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -26,7 +33,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ inputs.aws_region }}
 
       - name: Install kubectl
         run: |
@@ -35,5 +42,6 @@ jobs:
           sudo mv kubectl /usr/local/bin/
 
       - name: Deploy to Kubernetes
+        if: (( github.ref == 'refs/heads/main' || github.ref == 'main' ) &&  github.event.pull_request.merged == true )
         run: |
-          kubectl apply -f path/to/your/deployment.yaml -n ${{ env.K8S_NAMESPACE }}
+          kubectl apply -f path/to/your/deployment.yaml -n ${{ inputs.k8s_namespace }}
